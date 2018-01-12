@@ -1,5 +1,12 @@
 #!/usr/bin/python
-
+#
+#Shad Malloy 
+#shad.malloy@securenetworkmanagement.com
+#
+#
+# 1/9/2018
+#
+#
 # Multithreaded scanner to verify SMBv1.
 # Requires netaddr, pycrypto and impacket
 # pip install pycrypto
