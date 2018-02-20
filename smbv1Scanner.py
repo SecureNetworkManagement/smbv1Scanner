@@ -4,14 +4,21 @@
 #shad.malloy@securenetworkmanagement.com
 #
 #
-# 1/9/2018
+# 2/20/2018
 #
+# v .1
+# Original
+#
+# v .2 
+# Added Progress Bar
+# Reduced SMB connection Timeout to improve performance
 #
 # Multithreaded scanner to verify SMBv1.
 # Requires netaddr, pycrypto and impacket
 # pip install pycrypto
 # pip install impacket
 # pip install netaddr
+# pip install progress
 
 # Imports
 import argparse
@@ -24,6 +31,7 @@ import os
 from impacket.smbconnection import SMBConnection, smb, SMB_DIALECT
 from netaddr import *
 from threading import Thread
+from progress.bar import ShadyBar
 
 # Globals
 threadCounter = 0
@@ -42,7 +50,7 @@ def commandLineParser():
 
    	main_parser.add_argument('-t', '--threads', default='8', help="Number of Threads")
     	main_parser.add_argument('-o', '--output', nargs=1, default='output.txt', help="Output File Name")
-    	main_parser.add_argument('-v', '--version', action='version', version='%(prog)s 0.1')
+    	main_parser.add_argument('-v', '--version', action='version', version='%(prog)s 0.2')
 
 	return main_parser
 
@@ -56,13 +64,15 @@ def main(argv):
 		sys.exit(1)
 	args = parser.parse_args()
 
-        # Set Threads
+        # Set Threads and Bar
 	threadMax = 0
-	
+	barMax = 0
+
 	if args.threads:
                 threadMax = int(args.threads)
 	else:
                 threadMax = 256
+
         
 	# Assign Options
 	if args.input:
@@ -91,12 +101,18 @@ def main(argv):
                                 ipListWorking.append(ip)
         
 	print('Number of addresses: ' + str(len(ipListWorking)))
+	# Randomize list
 	random.shuffle(ipListWorking)
+	# Set barMax equal to number of hosts
+	barMax = len(ipListWorking)
 
 	# Thread Count Sanity Check
 	if len(ipListWorking) < threadMax:
                 threadMax = len(ipListWorking)
                 print('Setting threads equal to number of hosts: ' + str(threadMax))
+
+	# Progress Bar
+	bar = ShadyBar('Scan Progress', max=barMax, suffix='%(index)d/%(max)d - %(percent).1f%% - %(eta)ds')
 
         # Actually do stuff
 	for ip in ipListWorking:
@@ -107,17 +123,23 @@ def main(argv):
 
 		# wait if thread count is greater than maximum thread count
 		while int(threadCounter) >= int(threadMax):
-			time.sleep(1)
+			time.sleep(.25)
 
 		# scan worker thread
 		else:
-                        # print(str(ip) + ' thread ' + str(threadCounter))
+                        #print(str(ip) + ' thread ' + str(threadCounter))
 			worker = Thread(target=doCheck, args=[ip])
 			worker.setDaemon(True)
 			worker.start()
 			# Block until thread completes
-			worker.join()
+			#worker.join()
 
+		# Update Progress Bar
+		bar.next()
+
+	# Finish Bar
+	bar.finish()	
+	
 	# Do reporting
     	print ('\n . x X Scan Completed X x .')
 	global outputList
@@ -155,10 +177,12 @@ def doCheck(ip):
 	global outputList
 	# Convert IP to iterable
 	host = str(ip)
+	# Set timeout to 2 seconds to improve performance
+	timeoutSMB = 2
 	try: 
 		#Create connection strings for port 139 and 445        	
-		s445 = SMBConnection('*SMBSERVER', remoteHost=host, sess_port=445, preferredDialect=smb.SMB_DIALECT)
-		s139 = SMBConnection('*SMBSERVER', remoteHost=host, sess_port=139, preferredDialect=smb.SMB_DIALECT)
+		s445 = SMBConnection('*SMBSERVER', remoteHost=host, sess_port=445, preferredDialect=smb.SMB_DIALECT, timeout=timeoutSMB)
+		s139 = SMBConnection('*SMBSERVER', remoteHost=host, sess_port=139, preferredDialect=smb.SMB_DIALECT, timeout=timeoutSMB)
         	if isinstance(s445, SMBConnection):
                         print('SMBv1 Enabled (port 445): ' + host)
 			outputList.append('SMBv1 Enabled (port 445): ' + str(host))
@@ -203,3 +227,4 @@ if __name__ == "__main__":
     	signal.signal(signal.SIGINT, customExit)
     	#call main
 	main(sys.argv[1:])
+
