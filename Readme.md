@@ -7,10 +7,13 @@ Install with:
 	pip install pycrypto
 	pip install impacket
 	pip install netaddr
+	pip install progress
+	pip install ipaddress
+	
 	
 python smbv1Scanner.py [*options]
-usage: smbv1 scanner [-h] [-i INPUT [INPUT ...] | -f FILE] [-t THREADS]
-                     [-o OUTPUT] [-v]
+usage: smbv1 scanner [-h] [-i INPUT [INPUT ...] | -f FILE | -r RESTORE]
+                     [-t THREADS] [-o OUTPUT] [-v]
 
 ******* * * * * * * * Check SMB for Version 1 Support * * * * * * * *******
 
@@ -19,6 +22,8 @@ optional arguments:
   -i INPUT [INPUT ...], --input INPUT [INPUT ...]
                         IP Address in CIDR Notation
   -f FILE, --file FILE  file containing list of IPs to check
+  -r RESTORE, --restore RESTORE
+                        Restart from restore file
   -t THREADS, --threads THREADS
                         Number of Threads
   -o OUTPUT, --output OUTPUT
@@ -26,5 +31,6 @@ optional arguments:
   -v, --version         show program's version number and exit
 
 ******* * * * * * * * * * * * * * * * * * * * * * * * * *******
+
 
 
